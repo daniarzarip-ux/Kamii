@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Для Ками ❤️</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;700&family=Pacifico&display=swap');
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #0d0d0d; /* Темный фон */
+            font-family: 'Montserrat', sans-serif;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        /* Контейнер для текста поверх анимации */
+        #content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            pointer-events: none; /* Чтобы мышка проходила сквозь текст к канвасу */
+            z-index: 10;
+        }
+
+        h1 {
+            color: #ff4d6d;
+            font-family: 'Pacifico', cursive;
+            font-size: 5rem;
+            margin: 0;
+            text-shadow: 0 0 20px rgba(255, 77, 109, 0.6);
+            opacity: 0;
+            animation: fadeIn 3s ease-in forwards 1s;
+        }
+
+        #typewriter {
+            color: #fff;
+            margin-top: 20px;
+            font-size: 1.2rem;
+            font-weight: 300;
+            min-height: 1.5em;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+        }
+
+        @keyframes fadeIn {
+            to { opacity: 1; }
+        }
+        
+        @media (max-width: 600px) {
+            h1 { font-size: 3rem; }
+            #typewriter { font-size: 1rem; width: 90vw; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="content">
+        <h1>Kami</h1>
+        <div id="typewriter"></div>
+    </div>
+
+    <canvas id="heart"></canvas>
+
+    <script>
+        /* НАСТРОЙКИ (МОЖНО МЕНЯТЬ)
+        */
+        const CONFIG = {
+            particleCount: 700,      // Количество частиц (чем больше, тем плотнее сердце)
+            particleColor: '#ff0a54',// Цвет частиц
+            heartSize: 15,           // Размер сердца
+            message: "Ты — причина моего счастья... С Днем Святого Валентина! ❤️" // Твое послание
+        };
+
+        const canvas = document.getElementById('heart');
+        const ctx = canvas.getContext('2d');
+        let width, height;
+        
+        // Массив частиц
+        const particles = [];
+
+        // Инициализация размеров
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // Формула Сердца (Математика любви!)
+        // x = 16sin^3(t)
+        // y = 13cos(t) - 5cos(2t) - 2cos(3t) - cos(4t)
+        function getHeartPoint(t) {
+            const x = 16 * Math.pow(Math.sin(t), 3);
+            const y = 13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t);
+            return {
+                x: x * CONFIG.heartSize + width / 2,
+                y: -y * CONFIG.heartSize + height / 2 // Минус y, так как в канвасе Y идет вниз
+            };
+        }
+
+        class Particle {
+            constructor() {
+                this.reset();
+                // Начинаем со случайной позиции на экране
+                this.x = Math.random() * width;
+                this.y = Math.random() * height;
+            }
+
+            reset() {
+                // Выбираем случайную точку на контуре или внутри сердца
+                let t = Math.random() * Math.PI * 2;
+                let target = getHeartPoint(t);
+                
+                // Добавляем немного рандома, чтобы заполнить сердце внутри
+                let randomScale = Math.random();
+                // Интерполяция между центром и краем
+                let center = { x: width/2, y: height/2 };
+                
+                // Целевая точка (куда частица стремится)
+                // Смешиваем позицию на контуре и позицию в центре для эффекта объема
+                this.targetX = target.x; 
+                this.targetY = target.y; 
+
+                // Немного разброса
+                const fuzz = 15;
+                this.targetX += (Math.random() - 0.5) * fuzz;
+                this.targetY += (Math.random() - 0.5) * fuzz;
+
+                this.size = Math.random() * 3 + 1;
+                this.speed = Math.random() * 0.05 + 0.02; // Скорость движения
+                this.color = CONFIG.particleColor;
+            }
+
+            update() {
+                // Движение к цели
+                this.x += (this.targetX - this.x) * this.speed;
+                this.y += (this.targetY - this.y) * this.speed;
+
+                // Эффект "биения" сердца (пульсация)
+                const time = Date.now() / 1000;
+                const beat = 1 + Math.sin(time * 2) * 0.05; // Частота и сила биения
+                
+                // Отрисовка с учетом пульсации от центра
+                const dx = this.x - width/2;
+                const dy = this.y - height/2;
+                
+                this.drawX = width/2 + dx * beat;
+                this.drawY = height/2 + dy * beat;
+            }
+
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.globalAlpha = Math.random() * 0.5 + 0.5; // Мерцание
+                ctx.beginPath();
+                ctx.arc(this.drawX, this.drawY, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        // Создаем частицы
+        for (let i = 0; i < CONFIG.particleCount; i++) {
+            particles.push(new Particle());
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, width, height); // Очистка экрана
+            
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+            });
+
+            requestAnimationFrame(animate);
+        }
+
+        // Запуск анимации
+        animate();
+
+        // Эффект печатной машинки для текста
+        const typeWriterElement = document.getElementById('typewriter');
+        let textIndex = 0;
+
+        function typeWriter() {
+            if (textIndex < CONFIG.message.length) {
+                typeWriterElement.innerHTML += CONFIG.message.charAt(textIndex);
+                textIndex++;
+                setTimeout(typeWriter, 100); // Скорость печати
+            }
+        }
+
+        // Задержка перед началом печати текста (чтобы сердце успело собраться)
+        setTimeout(typeWriter, 2500);
+
+    </script>
+</body>
+</html>
